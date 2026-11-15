@@ -1,0 +1,12 @@
+langgraph
+langchain-google-genai
+langchain-core
+python-dotenv
+pydantic
+numpy
+rank-bm25
+python-hcl2
+gradio
+beautifulsoup4
+pytest
+pytest-asyncio

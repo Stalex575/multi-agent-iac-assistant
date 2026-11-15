@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "infrapilot"
+version = "0.2.0"
+description = "NLP system: natural-language requirements -> validated Terraform for small AWS services (LangGraph + Gemini)."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "langgraph",
+  "langchain-google-genai",
+  "langchain-core",
+  "python-dotenv",
+  "pydantic",
+  "numpy",
+  "rank-bm25",
+  "python-hcl2",
+  "gradio",
+  "beautifulsoup4",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-asyncio"]
+
+[project.scripts]
+infrapilot = "infra_assistant.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "."]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
