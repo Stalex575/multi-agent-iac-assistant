@@ -76,7 +76,7 @@ collector remembers what was said in earlier turns.
 |---|---|---|---|---|---|
 | 1 | Intent Router | Decide which path handles the message | user message + last turns | `TERRAFORM_REQUEST` / `INFRA_QUESTION` / `OUT_OF_SCOPE` + reason | Gemini flash-lite, structured output. Skipped while the collector waits for answers. |
 | 2 | Requirements Collector | Fill the requirement slots, ask for missing ones | current slots + conversation | updated slots, follow-up question or "complete" + list of assumed slots | Gemini flash-lite, structured output (`CollectorResult`). Missing slots and defaults are computed in code, not by the LLM. |
-| 3 | Retriever | Give the generator real argument names and best practices | requirements turned into 4-6 queries (or the user question) | top chunks with source URLs | BM25 (local) + Gemini embeddings (cosine), fused with Reciprocal Rank Fusion |
+| 3 | Retriever | Give the generator real argument names and best practices | requirements turned into 4-6 queries (or the user question) | top chunks with source URLs | BM25 over 2315 chunks (local) + Gemini embeddings over 263 documents (cosine), fused with Reciprocal Rank Fusion |
 | 4 | Terraform Generator | Write the config | requirements, assumptions, retrieved docs, validator errors on retries | HCL + design notes | Gemini flash, structured output (`TerraformDraft`) |
 | 5 | Validator | Check validity, safety, and that requirements are met | HCL + requirements | report: syntax, validate errors, policy findings, requirement checks, pass/fail | **No LLM.** `terraform fmt`, `terraform validate -json`, HCL parsing with `python-hcl2` |
 | 6 | Explainer | Explain the design to the user | requirements, config, validator report | markdown explanation + cost estimate | Gemini flash |
@@ -112,7 +112,7 @@ website, $400/month."*
 |---|---|---|---|
 | AWS Well-Architected Framework best practices (Reliability, Security, Cost, Performance) | docs.aws.amazon.com, downloaded by `scripts/fetch_docs.py` | 210 pages | best-practice context, advisor answers |
 | Terraform AWS provider resource docs | `hashicorp/terraform-provider-aws` on GitHub | 53 resources | exact argument names and examples for the generator |
-| Knowledge base after cleaning and chunking | `scripts/build_index.py` | 2315 chunks (1168 TF, 1147 WA) | retrieval |
+| Knowledge base after cleaning and chunking | `scripts/build_index.py` | 2315 chunks (1168 TF, 1147 WA), 263 document vectors | retrieval |
 | Evaluation sets | written by hand, see below | 60 + 14 + 56 + 30 + 12 + 21 items | evaluation |
 
 I looked for an existing dataset of "requirements -> Terraform" pairs with labels and did not find one that fits
@@ -138,7 +138,7 @@ small AWS services, so the evaluation sets in `data/eval/` are synthetic but wri
 | 2 specialist agents writing free text | Terraform generator with structured output | Output has to be a config, not advice. |
 | LLM "QA lead" deciding if the answer is good | Deterministic validator (terraform CLI + rules) | An LLM grading its own Terraform is unreliable. `terraform validate` gives a hard yes/no and exact errors to fix. |
 | QA retry loop | Kept, now driven by validator errors | Same idea, much more useful feedback. |
-| Pinecone (cache + 2 namespaces, 6 hand-written docs) | Local hybrid index over 2315 real doc chunks + local semantic cache | One API key instead of two, reproducible evals, BM25 helps with exact resource names. |
+| Pinecone (cache + 2 namespaces, 6 hand-written docs) | Local hybrid index over 2315 real doc chunks + local semantic cache | One API key instead of two, reproducible evals, BM25 helps with exact resource names. Dense vectors are per document (263) because the free embedding quota is 1000 texts/day. |
 | No evaluation | 8 evals, one per component | Requirement of the assignment. |
 | FastAPI endpoint | Gradio chat UI with a trace panel, CLI | Easier to demo and to see what each node did. |
 
@@ -159,7 +159,7 @@ terraform -chdir=terraform_sandbox init
 
 # knowledge base (chunks are already in the repo; this downloads raw docs again and embeds them)
 python scripts/fetch_docs.py    # optional, only if you want to rebuild from scratch
-python scripts/build_index.py   # embeds 2315 chunks with Gemini, resumable
+python scripts/build_index.py   # embeds 263 documents with Gemini (~5 min, paced for the free tier), resumable
 
 python -m infra_assistant.ui    # web UI on http://127.0.0.1:7860
 python -m infra_assistant.cli   # or a terminal chat

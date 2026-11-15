@@ -47,6 +47,10 @@ class Settings:
 
         path = Path(env_path)
         raw: dict[str, str | None] = dict(dotenv_values(path)) if path.exists() else {}
+        # LangSmith reads its settings from the process environment, so pass the tracing keys on.
+        for key, value in raw.items():
+            if key.startswith(("LANGSMITH_", "LANGCHAIN_")) and value:
+                os.environ.setdefault(key, value)
         raw.update(os.environ)
         return cls.from_mapping(raw)
 

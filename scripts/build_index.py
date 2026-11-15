@@ -26,6 +26,8 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+from infra_assistant.store import document_text  # noqa: E402
+
 RAW = ROOT / "data" / "raw"
 OUT = ROOT / "data" / "index"
 DROP_SECTIONS = re.compile(r"^(attribute reference|attributes reference|import|timeouts)", re.I)
@@ -89,29 +91,48 @@ def well_architected_chunks() -> list[dict]:
     return chunks
 
 
-def embed(chunks: list[dict], batch: int = 50) -> np.ndarray:
+def representatives(chunks: list[dict]) -> tuple[list[int], list[str]]:
+    """One text per document: its title + the start of its first two chunks.
+
+    The Gemini free tier counts every embedded text as a request (100/min, 1000/day), so embedding all
+    2315 chunks is not possible. Dense search therefore works at document level, BM25 at chunk level.
+    """
+
+    rows: list[int] = []
+    texts: dict[str, str] = {}
+    for i, c in enumerate(chunks):
+        if c["doc_id"] not in texts:
+            rows.append(i)
+            texts[c["doc_id"]] = c["text"]
+        elif len(texts[c["doc_id"]]) < 1500:
+            texts[c["doc_id"]] += "\n" + c["text"]
+    docs = [document_text(chunks[i]["title"], texts[chunks[i]["doc_id"]][:1500]) for i in rows]
+    return rows, docs
+
+
+def embed(texts: list[str], batch: int = 15, pause_s: float = 15.0) -> np.ndarray:
+    """15 texts (~6k tokens) every 15 s keeps us under the 100 RPM / 30k TPM free-tier limits."""
+
     from infra_assistant.config import Settings
     from infra_assistant.models import build_embedder
-    from infra_assistant.store import document_text
 
     embedder = build_embedder(Settings.load())
     partial = OUT / "vectors.partial.npy"
-    done = np.load(partial) if partial.exists() else np.zeros((0, 0), dtype=np.float32)
-    vectors = list(done)
-    for start in range(len(vectors), len(chunks), batch):
-        texts = [document_text(c["title"], c["text"]) for c in chunks[start:start + batch]]
+    vectors = list(np.load(partial)) if partial.exists() else []
+    for start in range(len(vectors), len(texts), batch):
         for attempt in range(5):
             try:
-                vectors.extend(embedder.embed_documents(texts))
+                vectors.extend(embedder.embed_documents(texts[start:start + batch]))
                 break
             except Exception as exc:  # rate limits / network drops
-                wait = 15 * (attempt + 1)
-                print(f"embed batch {start} failed ({exc.__class__.__name__}: {str(exc)[:120]}); retry in {wait}s")
+                wait = 30 * (attempt + 1)
+                print(f"embed batch {start} failed ({exc.__class__.__name__}: {str(exc)[:120]}); retry in {wait}s", flush=True)
                 time.sleep(wait)
         else:
             raise SystemExit("embedding failed repeatedly; re-run to resume")
         np.save(partial, np.asarray(vectors, dtype=np.float32))
-        print(f"embedded {len(vectors)}/{len(chunks)}")
+        print(f"embedded {len(vectors)}/{len(texts)}", flush=True)
+        time.sleep(pause_s)
     return np.asarray(vectors, dtype=np.float32)
 
 
@@ -127,8 +148,10 @@ def main() -> None:
     kinds = {k: sum(c["kind"] == k for c in chunks) for k in ("terraform", "well_architected")}
     print(f"chunks: {len(chunks)} {kinds}, docs: {len({c['doc_id'] for c in chunks})}")
     if not args.no_embed:
-        vectors = embed(chunks)
+        rows, texts = representatives(chunks)
+        vectors = embed(texts)
         np.save(OUT / "vectors.npy", vectors)
+        (OUT / "vector_rows.json").write_text(json.dumps(rows))
         (OUT / "vectors.partial.npy").unlink(missing_ok=True)
         print(f"saved vectors {vectors.shape}")
 

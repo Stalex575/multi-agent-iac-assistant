@@ -51,7 +51,8 @@ def _normalize(matrix: np.ndarray) -> np.ndarray:
 @dataclass
 class KnowledgeIndex:
     chunks: list[dict[str, Any]]  # {"id","doc_id","title","source","kind","text"}
-    vectors: np.ndarray | None  # (n, d) L2-normalised, or None if not embedded
+    vectors: np.ndarray | None  # (m, d) L2-normalised, or None if not embedded
+    rows: list[int] | None = None  # chunk index of each vector row (None = one vector per chunk)
     _bm25: BM25Okapi = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
@@ -64,10 +65,12 @@ class KnowledgeIndex:
             raise FileNotFoundError(f"{meta} missing - run `python scripts/build_index.py`")
         chunks = [json.loads(line) for line in meta.read_text(encoding="utf-8").splitlines() if line]
         vec_path = index_dir / "vectors.npy"
+        rows_path = index_dir / "vector_rows.json"
         vectors = _normalize(np.load(vec_path)) if vec_path.exists() else None
-        if vectors is not None and len(vectors) != len(chunks):
-            vectors = None  # stale embeddings; fall back to BM25 only
-        return cls(chunks=chunks, vectors=vectors)
+        rows = json.loads(rows_path.read_text()) if rows_path.exists() else None
+        if vectors is not None and len(vectors) != len(rows if rows is not None else chunks):
+            vectors, rows = None, None  # stale embeddings; fall back to BM25 only
+        return cls(chunks=chunks, vectors=vectors, rows=rows)
 
     def bm25_ranking(self, query: str, k: int) -> list[tuple[int, float]]:
         scores = self._bm25.get_scores(tokenize(query))
@@ -80,7 +83,8 @@ class KnowledgeIndex:
         q = _normalize(np.asarray(query_vec, dtype=np.float32))
         scores = self.vectors @ q
         order = np.argsort(-scores)[:k]
-        return [(int(i), float(scores[i])) for i in order]
+        to_chunk = self.rows or list(range(len(self.chunks)))
+        return [(to_chunk[int(i)], float(scores[i])) for i in order]
 
     @staticmethod
     def rrf(rankings: list[list[tuple[int, float]]], k: int) -> list[tuple[int, float]]:

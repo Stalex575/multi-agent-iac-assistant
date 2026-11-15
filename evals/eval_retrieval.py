@@ -6,6 +6,7 @@ BM25 runs fully offline; dense/hybrid need the Gemini embedding index.
 
 from __future__ import annotations
 
+import asyncio
 import math
 from typing import Any
 
@@ -43,6 +44,7 @@ async def run(ctx: Any, modes: tuple[str, ...] = MODES) -> list[dict[str, Any]]:
     retriever = ctx.retriever
 
     async def one(item: dict[str, Any]) -> dict[str, Any]:
+        await asyncio.sleep(1.0)  # embedding API: 100 requests/min on the free tier
         row: dict[str, Any] = {"query": item["query"], "relevant": item["relevant"]}
         for mode in modes:
             # pull a deep chunk list so 10 distinct documents survive de-duplication

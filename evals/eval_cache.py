@@ -23,6 +23,7 @@ async def run(ctx: Any) -> list[dict[str, Any]]:
     emb = ctx.models.embeddings
 
     async def one(item: dict[str, Any]) -> dict[str, Any]:
+        await asyncio.sleep(1.5)  # 2 embeddings per pair; free tier allows 100 requests/min
         va, vb = await asyncio.gather(
             asyncio.to_thread(emb.embed_query, similarity_text(item["a"])),
             asyncio.to_thread(emb.embed_query, similarity_text(item["b"])),

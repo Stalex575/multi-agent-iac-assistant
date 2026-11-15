@@ -76,3 +76,13 @@ author and the coding agent via the `crisp-dm-log` skill).
   router/collector `gemini-3.1-flash-lite` (separate quota), judges `gemini-3.8-flash` and `gemini-4-hydrogen`
   (5 RPM, 20 RPD each, so only used for ~12 judge calls each). Stronger "flash" models were not used for generation
   because 20 requests/day is not enough for 12 generation cases with retries.
+
+### 22:12 - Data Preparation (loop back) - embedding quota
+- **What:** started embedding all 2315 chunks and hit the free-tier limit after ~200: the embedding API counts every
+  text in a batch as one request (100/min, 1000/day). Embedding everything would need 2315 requests, more than a day
+  of quota. Stopped the job.
+- **Decision:** dense vectors are now built per document (263 texts: title + start of the doc, ~1500 chars), BM25
+  stays per chunk. Hybrid search fuses both, so the dense side picks the right document and BM25 picks the right
+  paragraph. Embedding is paced at 15 texts / 15 s. Total embedding use today ~680 of 1000 incl. evals and demo.
+- **Trade-off:** dense retrieval loses detail from the later sections of long docs. The retrieval eval measures
+  at document level, so it is still a fair comparison, but chunk-level dense would likely score a bit higher.
