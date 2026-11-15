@@ -103,3 +103,17 @@ author and the coding agent via the `crisp-dm-log` skill).
 - **Cache:** paraphrases average cosine 0.961, near-miss questions 0.874 but up to 0.923. At the old threshold 0.92
   the false-hit rate is 13% (e.g. "PITR for DynamoDB" vs "PITR for RDS"). From 0.93 up there are no false hits on
   this set; 0.94 chosen to keep some margin (recall drops to 0.867, which only costs an extra LLM call).
+
+### 22:40 - Evaluation - generation, explainer, advisor; judge problems
+- **Generation:** all checks passed 0.25 on the first draft -> 0.83 after the fix loop (no-RAG ablation: 0.00 -> 0.58).
+  No HIGH policy finding and 100% requirement coverage in every final config. Remaining failures: a Lambda case using
+  the `archive` provider (not installed in the offline sandbox) and a non-existent `inline_code` block, and an ECS
+  case that kept putting `subnet_ids` in the wrong block. Without RAG the model often wrote the whole config on one line.
+- **Judges:** `gemini-3.8-flash` and then `gemini-3.7-flash` returned 503 "high demand" for every call, so the
+  explainer was judged by `gemini-3.6-flash` and the advisor by `gemini-4-hydrogen`. 3.6-flash gave 5/5 to all 12
+  explanations; Hydrogen re-judged 4 of them at 4/5. Conclusion: LLM-judge numbers depend on the judge model, and
+  the judge needs the same context as the explainer (it flagged the injected region as unsupported).
+- **Advisor:** faithfulness 2.5/5. Mostly correct facts that are not in the indexed docs (the knowledge base has
+  the Terraform reference and Well-Architected, not the service user guides), plus 2 real grounding errors.
+- **Next (not done, out of time):** add service user guides to the corpus; re-retrieve docs for the resource named
+  in a repeated validate error; pre-install `hashicorp/archive` in the sandbox; clearer scope examples in the router.

@@ -74,14 +74,14 @@ collector remembers what was said in earlier turns.
 
 | # | Component | Purpose | Input | Output | Model / tool call |
 |---|---|---|---|---|---|
-| 1 | Intent Router | Decide which path handles the message | user message + last turns | `TERRAFORM_REQUEST` / `INFRA_QUESTION` / `OUT_OF_SCOPE` + reason | Gemini flash-lite, structured output. Skipped while the collector waits for answers. |
-| 2 | Requirements Collector | Fill the requirement slots, ask for missing ones | current slots + conversation | updated slots, follow-up question or "complete" + list of assumed slots | Gemini flash-lite, structured output (`CollectorResult`). Missing slots and defaults are computed in code, not by the LLM. |
+| 1 | Intent Router | Decide which path handles the message | user message + last turns | `TERRAFORM_REQUEST` / `INFRA_QUESTION` / `OUT_OF_SCOPE` + reason | `gemini-3.1-flash-lite`, structured output. Skipped while the collector waits for answers. |
+| 2 | Requirements Collector | Fill the requirement slots, ask for missing ones | current slots + conversation | updated slots, follow-up question or "complete" + list of assumed slots | `gemini-3.1-flash-lite`, structured output (`CollectorResult`). Missing slots and defaults are computed in code, not by the LLM. |
 | 3 | Retriever | Give the generator real argument names and best practices | requirements turned into 4-6 queries (or the user question) | top chunks with source URLs | BM25 over 2315 chunks (local) + Gemini embeddings over 263 documents (cosine), fused with Reciprocal Rank Fusion |
-| 4 | Terraform Generator | Write the config | requirements, assumptions, retrieved docs, validator errors on retries | HCL + design notes | Gemini flash, structured output (`TerraformDraft`) |
+| 4 | Terraform Generator | Write the config | requirements, assumptions, retrieved docs, validator errors on retries | HCL + design notes | `gemini-3.5-flash-lite`, structured output (`TerraformDraft`) |
 | 5 | Validator | Check validity, safety, and that requirements are met | HCL + requirements | report: syntax, validate errors, policy findings, requirement checks, pass/fail | **No LLM.** `terraform fmt`, `terraform validate -json`, HCL parsing with `python-hcl2` |
-| 6 | Explainer | Explain the design to the user | requirements, config, validator report | markdown explanation + cost estimate | Gemini flash |
+| 6 | Explainer | Explain the design to the user | requirements, config, validator report | markdown explanation + cost estimate | `gemini-3.5-flash-lite` |
 | 7 | Semantic Cache | Skip the LLM for repeated questions | question | cached answer if cosine >= threshold | Gemini embeddings |
-| 8 | Advisor | Answer infra questions with citations | question + retrieved chunks | answer with `[n]` citations + source list | Gemini flash |
+| 8 | Advisor | Answer infra questions with citations | question + retrieved chunks | answer with `[n]` citations + source list | `gemini-3.5-flash-lite` |
 
 ### One input, end to end
 
@@ -201,7 +201,164 @@ Each component has its own metric, chosen so that a bad component would actually
 
 ### Results
 
-RESULTS_PLACEHOLDER
+All numbers below come from `evals/results/*.jsonl` (full tables in [`docs/eval_report.md`](docs/eval_report.md)).
+Models: router/collector `gemini-3.1-flash-lite`, generator/explainer/advisor `gemini-3.5-flash-lite`,
+judges `gemini-3.6-flash` (explainer) and `gemini-4-hydrogen` (advisor + explainer cross-check), embeddings `gemini-embedding-2`.
+The eval sets are small, so treat differences of a few percent as noise.
+
+**Summary**
+
+| Component | Main metric | Result | Verdict |
+|---|---|---|---|
+| Intent Router | accuracy (easy / hard set) | 1.00 / 0.73 (keyword baseline 0.88 / 0.40) | good; scope edge cases are the weak spot |
+| Requirements Collector | slot accuracy strict / lenient | 0.945 / 1.00 | good; one ambiguous enum |
+| Retriever (hybrid) | Hit@5 / MRR | 0.982 / 0.877 (BM25 0.875 / 0.756) | good after the fusion fix |
+| Semantic Cache | false-hit rate at chosen threshold 0.94 | 0.00 (0.133 at the old 0.92) | fixed by the eval |
+| Generator + fix loop | all checks passed, first draft / final | 0.25 / 0.83 (no RAG: 0.00 / 0.58) | the weakest part, but the loop works |
+| Validator | decision accuracy on labelled configs | 1.00 (21/21) | deterministic, as expected |
+| Explainer | LLM-judge faithfulness (1-5) | 5.0 (lenient judge) / 4.0 (strict judge, 4 cases) | good, but the judges disagree |
+| Advisor | LLM-judge faithfulness (1-5) / answers with citations | 2.5 / 0.92 | weakest part: answers go beyond the indexed docs |
+
+#### 1. Intent Router (75 messages)
+
+| | Accuracy | Macro-F1 | Easy set (60) | Hard set (15) |
+|---|---|---|---|---|
+| LLM router | 0.947 | 0.941 | 1.000 | 0.733 |
+| Keyword baseline | 0.787 | - | 0.883 | 0.400 |
+
+The first 60 messages were too easy: the router got all of them right, so I added 15 ambiguous ones. All 4 errors
+are on the scope boundary: a boto3 script and a Dockerfile were treated as infra work (gold: out of scope),
+"review this Terraform" was sent to the build path instead of being answered, and "Kubernetes on a Raspberry Pi"
+was refused as "not AWS" although it is a DevOps question. Some of these labels are debatable, which is the point
+of the hard set. Improvement: describe the scope boundary in the router prompt with 2-3 examples of each edge case
+(application code vs infrastructure code, review vs build).
+
+#### 2. Requirements Collector (14 conversations, 1-3 user turns)
+
+| Metric | Value |
+|---|---|
+| Slot accuracy (strict / lenient) | 0.945 / 1.000 |
+| Missing-slot detection after turn 1 (P / R / F1) | 1.000 / 0.955 / 0.977 |
+| Slots filled that the user had not given yet | 2 |
+| Conversations fully correct | 14 / 14 |
+| Follow-up questions per conversation | 1.07 |
+
+All strict errors are the same thing: for a public site with a database the model says `public` where my gold
+label says `public_frontend_private_backend` (5 of 14). The two values overlap; merging them would remove the error
+and lose nothing, because the policy rules already force the database to be private. The 2 "unasked" slots are
+reasonable guesses ("internal HR tool" -> private network, static site -> single AZ), not invented facts.
+
+#### 3. Retriever (56 queries, relevance at document level)
+
+| Metric | BM25 | Dense | Hybrid v1 (chunk RRF) | Hybrid (doc RRF, final) |
+|---|---|---|---|---|
+| Hit@1 | 0.661 | 0.893 | 0.571 | 0.786 |
+| Hit@5 | 0.875 | 1.000 | 0.857 | 0.982 |
+| Recall@5 | 0.807 | 0.941 | 0.798 | 0.879 |
+| MRR | 0.756 | 0.942 | 0.703 | 0.877 |
+| nDCG@5 | 0.737 | 0.914 | 0.700 | 0.828 |
+| Hit@5 Terraform-syntax queries (26) | 1.000 | 1.000 | 0.962 | 1.000 |
+| Hit@5 best-practice queries (18) | 1.000 | 1.000 | 1.000 | 1.000 |
+| Hit@5 paraphrased queries (12) | 0.417 | 1.000 | 0.417 | 0.917 |
+
+- BM25 is perfect when the query contains AWS words and falls apart on plain-language queries ("get an email when
+  CPU is too high"). Dense handles both.
+- The first hybrid version was worse than dense alone. Reason: fusion was done per chunk, BM25 votes once for every
+  chunk, dense once per document, so BM25 noise outvoted good dense results. Fixing it to fuse per document gave
+  Hit@5 0.857 -> 0.982.
+- On this set dense alone still has the best MRR. Hybrid is kept because dense only has one vector per document
+  (free-tier embedding quota), and BM25 is what picks the right paragraph inside the document, which matters for the
+  generator (it needs the exact "Argument Reference" part). Weighting dense x2 in the fusion reaches Hit@5 1.0 in a
+  simulation, but that would be tuned on the test set, so it is listed as a next step instead.
+
+#### 4. Semantic Cache (15 paraphrase pairs, 15 near-miss pairs)
+
+| Threshold | Precision | Recall | F1 | False-hit rate |
+|---|---|---|---|---|
+| 0.88 | 0.682 | 1.000 | 0.811 | 0.467 |
+| 0.90 | 0.833 | 1.000 | 0.909 | 0.200 |
+| 0.92 (old setting) | 0.882 | 1.000 | 0.938 | 0.133 |
+| 0.94 (new setting) | 1.000 | 0.867 | 0.929 | 0.000 |
+| 0.96 | 1.000 | 0.533 | 0.696 | 0.000 |
+
+Paraphrases have cosine 0.961 on average, near misses 0.874, but the hardest near misses are very close:
+"enable PITR for DynamoDB" vs "for RDS" = 0.923, "Fargate vs EC2 cost" vs "Lambda vs EC2 cost" = 0.922. With the old
+threshold of 0.92 these get the wrong cached answer. A false hit is much worse than a miss (a miss only costs one
+extra LLM call), so the threshold was raised to 0.94.
+
+#### 5. Validator (21 labelled configs, offline)
+
+Decision accuracy 1.000, fail-detection P/R/F1 1.000, the right stage (syntax / validate / policy / requirement)
+in 21/21 cases. The first run "failed" 2 cases that turned out to be my labelling mistakes (an S3 bucket with public
+access blocked was labelled as satisfying "public access"). This component is plain code, so a perfect score is
+expected; the eval exists because the validator is the judge of the generator and has to be trusted.
+
+#### 6. Terraform Generator + Validator loop (12 requirement sets, max 2 fix rounds)
+
+| Metric | With retrieval | Without retrieval (ablation) |
+|---|---|---|
+| `terraform validate` pass, first draft | 0.333 | 0.083 |
+| `terraform validate` pass, after fix loop | 0.833 | 0.583 |
+| No HIGH policy findings (first / final) | 1.000 / 1.000 | 1.000 / 1.000 |
+| Requirement coverage (final) | 1.000 | 1.000 |
+| All checks passed (first / final) | 0.250 / **0.833** | 0.000 / 0.583 |
+| Attempts per case | 2.17 | 2.58 |
+| Latency per case | 20.2 s | 14.6 s |
+
+- **The fix loop is the biggest win:** only 3 of 12 first drafts pass everything, 10 of 12 do after feeding the
+  `terraform validate` errors back. Typical first-draft errors: a required argument missing (`subnet_ids`), the
+  same attribute written twice, a typo in an argument name (`ignore_public_ccls`), a reference to a resource that was
+  never declared, and twice "network=private" requirement failures (internet-facing load balancer for an internal tool).
+- **Retrieval helps** (0.583 -> 0.833 final). Part of the gap is formatting: without doc examples in the prompt the
+  model often packed the whole config into one line, which Terraform rejects, and the fix loop did not get it out of
+  that habit. So retrieval helps both with argument names and by showing what normal HCL looks like.
+- **Security rules were never violated** in any final config, even without retrieval: the rules are in the
+  generator prompt and the validator would catch them anyway.
+- **The 2 remaining failures:** a Lambda case that kept using an `inline_code` block that does not exist (and tried
+  the `archive` provider, which the offline sandbox does not have - an environment limitation, fixable by
+  pre-installing `hashicorp/archive`), and an ECS case that kept putting `subnet_ids` in the wrong block.
+  Improvement: when the same error repeats, retrieve the docs for the resource named in the error message before
+  the next fix attempt (right now retrieval happens only once, before the first draft).
+
+#### 7. Explainer (12 explanations from the generation run)
+
+| Metric | Judge `gemini-3.6-flash` (all 12) | Judge `gemini-4-hydrogen` (4 re-judged) |
+|---|---|---|
+| Faithfulness (1-5) | 5.00 | 4.00 |
+| Coverage (1-5) | 5.00 | 3.50 |
+| Clarity (1-5) | 5.00 | 4.00 |
+| `aws_*` resources mentioned but not in the config | 0 / 12 | - |
+
+A perfect 5.0 on everything looked more like a lenient judge than perfect explanations, so I re-judged 4 of them
+(2 that passed validation, 2 that failed) with `gemini-4-hydrogen`, the strict judge that also graded the advisor.
+It gave 4/4/4/4 and found one real issue (an explanation implies private instances can reach the internet although
+there is no NAT gateway) and one false alarm (it says the region is "not in the config", but the region is injected by
+our sandbox, so the judge simply did not see it). Both judges agree that the explanations report the validator result
+honestly, including the two failed cases. The deterministic check backs this up: no explanation names a resource type
+that is not in the config.
+Takeaways: (1) LLM-judge scores depend a lot on which model judges, so absolute numbers should not be compared
+across components judged by different models; (2) give the judge the same context the explainer had (the injected
+`versions.tf` and region). The original plan was `gemini-3.8-flash` as the explainer judge, but it returned 503 "high
+demand" errors during the run, so I switched to 3.6-flash.
+
+#### 8. Advisor, question path (12 questions, judge `gemini-4-hydrogen`)
+
+| Metric | Value |
+|---|---|
+| Faithfulness to retrieved docs (1-5) | 2.50 |
+| Coverage / clarity (1-5) | 4.00 / 4.25 |
+| Answers with at least one citation | 0.917 |
+| Citations pointing to a non-existent source | 0.000 |
+
+This is the weakest component and the judge's reasons show why. 9 of 12 answers got faithfulness 2 because of the
+rule "any claim not supported by the excerpts caps the score at 2". In 7 of those 9 the extra claims are actually
+correct (NAT gateway pricing, how Terraform state locking works, synchronous replication in Multi-AZ RDS), they just
+are not in the knowledge base: we indexed the Terraform reference and the Well-Architected Framework, not the
+service user guides that explain behaviour. The advisor prompt also allows "general best practice without a
+citation", so the two prompts disagree on purpose. Two answers have real problems: one attributes a claim to a
+source that does not say it, one misreads a reference (Aurora "needs exactly 3 AZs").
+So the score says "not grounded in our docs", not "wrong". Improvements: add the RDS / VPC / S3 user guides to the
+corpus, and make the advisor mark general-knowledge sentences explicitly (or refuse to go beyond the excerpts).
 
 ---
 
@@ -234,6 +391,9 @@ chat prompts:
 - Eval sets are small (written by hand in one day); numbers have wide error bars.
 - Requirement checks cover the main slots, not everything (e.g. budget is only used in the prompt, there is no
   real cost check; Infracost would be the next step).
-- The validator only checks what `terraform validate` can check without AWS credentials (no `plan`).
+- The validator only checks what `terraform validate` can check without AWS credentials (no `plan`), and the
+  offline sandbox only has the `hashicorp/aws` provider, so configs that use e.g. `archive` or `random` fail.
+- The advisor answers beyond the indexed documents (see eval 8); the corpus needs the AWS service user guides.
+- Judge scores depend on the judge model; two judges disagreed by ~1 point on the explainer.
 - One Terraform file per answer; no modules or remote state.
 - Gemini free tier rate limits make the full eval run slow (~15 requests/minute).

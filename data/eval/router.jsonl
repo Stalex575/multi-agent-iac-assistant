@@ -58,3 +58,18 @@
 {"id": "o12", "text": "What's the weather in Berlin tomorrow?", "label": "OUT_OF_SCOPE"}
 {"id": "o13", "text": "Help me plan a trip to Japan", "label": "OUT_OF_SCOPE"}
 {"id": "o14", "text": "Write a Python function that reverses a linked list", "label": "OUT_OF_SCOPE"}
+{"id": "h01", "text": "What would a terraform config for an S3 static website look like?", "label": "TERRAFORM_REQUEST"}
+{"id": "h02", "text": "Is it possible to run Postgres multi-AZ on a t4g.micro? If yes, set it up for my blog", "label": "TERRAFORM_REQUEST"}
+{"id": "h03", "text": "My terraform validate fails with 'Unsupported argument storage_size_gb', what's the right name?", "label": "INFRA_QUESTION"}
+{"id": "h04", "text": "Should I use ECS or Lambda for a webhook receiver with 2 requests per minute?", "label": "INFRA_QUESTION"}
+{"id": "h05", "text": "Write a Python script that uploads a file to S3 with boto3", "label": "OUT_OF_SCOPE"}
+{"id": "h06", "text": "Compare AWS and GCP pricing for a startup", "label": "INFRA_QUESTION"}
+{"id": "h07", "text": "We got a $2000 AWS bill, how do I find out what caused it?", "label": "INFRA_QUESTION"}
+{"id": "h08", "text": "ok and now put it in eu-west-1 instead", "label": "TERRAFORM_REQUEST"}
+{"id": "h09", "text": "I'm a student, explain what Terraform is like I'm five", "label": "INFRA_QUESTION"}
+{"id": "h10", "text": "Write a Dockerfile for my Flask app", "label": "OUT_OF_SCOPE"}
+{"id": "h11", "text": "Our app is slow, the database CPU is at 100%. What should we change in the infrastructure?", "label": "INFRA_QUESTION"}
+{"id": "h12", "text": "Can you review this terraform? resource \"aws_s3_bucket\" \"b\" { acl = \"public-read\" }", "label": "INFRA_QUESTION"}
+{"id": "h13", "text": "Pretend you are a pirate and describe a VPC", "label": "OUT_OF_SCOPE"}
+{"id": "h14", "text": "I need a place to store 2 TB of backups cheaply, can you build that?", "label": "TERRAFORM_REQUEST"}
+{"id": "h15", "text": "how do I deploy a kubernetes cluster on my raspberry pi at home", "label": "INFRA_QUESTION"}
