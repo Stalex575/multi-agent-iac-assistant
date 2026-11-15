@@ -3,7 +3,7 @@
 Chronological log of how the project moved through CRISP-DM phases (written by the
 author and the coding agent via the `crisp-dm-log` skill).
 
-### 16:05 — Business Understanding — choose the task
+### 16:05 - Business Understanding - choose the task
 - **What:** Picked the "DevOps assistant that generates Terraform" brief and decided to
   upgrade the author's earlier `multi-agent-triage` (LangGraph router → specialist →
   QA-retry loop + semantic cache) instead of starting from scratch.
@@ -20,7 +20,7 @@ author and the coding agent via the `crisp-dm-log` skill).
   - Out-of-scope requests are refused (router OUT_OF_SCOPE recall ≥ 0.9).
 - **Next:** inspect available data.
 
-### 16:20 — Data Understanding — knowledge sources
+### 16:20 - Data Understanding - knowledge sources
 - **What:** Probed public sources. AWS Well-Architected Framework TOC has 366 leaf pages
   (Reliability 72, Security 73, Cost 58, Performance 40 …). Terraform AWS provider docs
   are markdown on GitHub (e.g. `db_instance` = 43 KB with example usage + argument reference).
@@ -30,7 +30,39 @@ author and the coding agent via the `crisp-dm-log` skill).
   sets are synthetic but hand-checked (see `data/eval/`).
 - **Evidence:** `scripts/fetch_docs.py`, `data/raw/`.
 
-### 16:25 — Deployment (tooling) — reproducible validator
+### 16:25 - Deployment (tooling) - reproducible validator
 - **What:** Installed Terraform 1.9.8, pre-initialised `terraform_sandbox/` with
   `hashicorp/aws ~> 5.0`; generated code never declares providers, so validation runs offline.
 - **Why / decision:** Deterministic validity metric instead of LLM-judged validity.
+
+### 16:35 - Data Preparation - chunking
+- **What:** `scripts/build_index.py` turns 263 raw docs into 2315 chunks (1168 Terraform, 1147 Well-Architected).
+  Terraform docs are split by `##`/`###` headings; "Attribute Reference", "Import" and "Timeouts" sections are dropped
+  because they describe outputs, not how to write config. WA pages are re-flowed (the HTML export put a newline
+  after every inline tag) and cut into ~1200 char windows with 200 char overlap.
+- **Why / decision:** the generator needs argument names and examples, the advisor needs best-practice prose.
+  Heading-based splitting keeps an "Example Usage" block together.
+- **Evidence:** median chunk 1105 chars, max 1200.
+
+### 16:50 - Modeling - graph rebuilt on top of the old triage router
+- **What:** kept the old ideas (router, specialist, QA retry loop, semantic cache) and changed what they do:
+  - router now picks TERRAFORM_REQUEST / INFRA_QUESTION / OUT_OF_SCOPE instead of DB vs DevOps;
+  - new Requirements Collector (structured slot filling, asks follow-ups, max 3 rounds, then fills defaults and
+    marks them as assumptions);
+  - the LLM "QA lead" was replaced by a deterministic Validator (`terraform fmt`, `terraform validate`, policy rules,
+    requirement checks). Failures go back to the generator with the exact error list (max 2 fixes);
+  - Pinecone was replaced by a local hybrid index (BM25 + Gemini embeddings, fused with RRF). One API key instead of two,
+    and retrieval evals are reproducible.
+- **Why / decision:** an LLM judging its own Terraform is not reliable; `terraform validate` is.
+- **Evidence:** `src/infra_assistant/graph.py`, 13 offline tests pass (`pytest -q`).
+
+### 17:20 - Evaluation - first offline results
+- **What:** validator eval (21 labelled configs) and BM25 retrieval eval (56 queries) run without an API key.
+- **Findings:**
+  - The first validator run "failed" 2 cases. Both were labelling mistakes on my side: an S3 bucket with public
+    access blocked was labelled as satisfying `network_access=public`, but nothing in it is reachable from the
+    internet. The validator was right. Fixed the labels and added a case for exactly that. Now 21/21.
+  - BM25 gets Hit@5 = 1.0 on queries that contain resource names, but only 0.42 on 12 paraphrased queries
+    ("get an email when CPU is too high"). The first version of the retrieval set was too easy because I wrote the
+    queries with the doc titles in mind. Added the paraphrased group to make the comparison with dense retrieval fair.
+- **Next:** embed the corpus and check whether dense / hybrid fixes the paraphrased group.

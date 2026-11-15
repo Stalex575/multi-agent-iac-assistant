@@ -1,0 +1,30 @@
+{"id": "p01", "a": "What is the difference between an ALB and an NLB?", "b": "How does an Application Load Balancer differ from a Network Load Balancer?", "same": true}
+{"id": "p02", "a": "How do I make RDS Postgres highly available?", "b": "How can I set up a highly available Postgres database on RDS?", "same": true}
+{"id": "p03", "a": "How do I block public access on an S3 bucket?", "b": "how to prevent an s3 bucket from being public", "same": true}
+{"id": "p04", "a": "Why is a NAT gateway so expensive?", "b": "What makes NAT gateways cost so much money?", "same": true}
+{"id": "p05", "a": "How should I store database passwords on AWS?", "b": "What's the best way to keep DB credentials secret in AWS?", "same": true}
+{"id": "p06", "a": "What does multi_az do in aws_db_instance?", "b": "What is the effect of setting multi_az on an RDS instance in terraform?", "same": true}
+{"id": "p07", "a": "How does terraform state locking work?", "b": "Explain how Terraform locks its state file", "same": true}
+{"id": "p08", "a": "When should I use DynamoDB instead of Postgres?", "b": "DynamoDB vs PostgreSQL - when to choose which?", "same": true}
+{"id": "p09", "a": "Difference between security groups and NACLs?", "b": "security group vs network ACL, what's the difference", "same": true}
+{"id": "p10", "a": "How do autoscaling target tracking policies work?", "b": "Explain target tracking scaling policies for auto scaling groups", "same": true}
+{"id": "p11", "a": "Is Fargate more expensive than EC2 for a constant workload?", "b": "For steady load, does Fargate cost more than EC2?", "same": true}
+{"id": "p12", "a": "What is a DB subnet group for?", "b": "Why does RDS need a DB subnet group?", "same": true}
+{"id": "p13", "a": "How do I enable point-in-time recovery for DynamoDB?", "b": "how to turn on PITR on a dynamodb table", "same": true}
+{"id": "p14", "a": "How can I reduce data transfer costs between AZs?", "b": "Ways to cut cross-AZ data transfer charges", "same": true}
+{"id": "p15", "a": "What is chaos engineering?", "b": "Can you explain chaos engineering?", "same": true}
+{"id": "n01", "a": "How do I make RDS Postgres highly available?", "b": "How do I encrypt an RDS Postgres database?", "same": false}
+{"id": "n02", "a": "How do I block public access on an S3 bucket?", "b": "How do I make an S3 bucket public for static website hosting?", "same": false}
+{"id": "n03", "a": "What is the difference between an ALB and an NLB?", "b": "What is the difference between an ALB and API Gateway?", "same": false}
+{"id": "n04", "a": "How does terraform state locking work?", "b": "How does terraform state import work?", "same": false}
+{"id": "n05", "a": "When should I use DynamoDB instead of Postgres?", "b": "When should I use Aurora instead of RDS Postgres?", "same": false}
+{"id": "n06", "a": "How do I enable point-in-time recovery for DynamoDB?", "b": "How do I enable point-in-time recovery for RDS?", "same": false}
+{"id": "n07", "a": "Is Fargate more expensive than EC2 for a constant workload?", "b": "Is Lambda more expensive than EC2 for a constant workload?", "same": false}
+{"id": "n08", "a": "Difference between security groups and NACLs?", "b": "How do I open port 443 in a security group?", "same": false}
+{"id": "n09", "a": "Why is a NAT gateway so expensive?", "b": "Why is my NAT gateway not routing traffic?", "same": false}
+{"id": "n10", "a": "How should I store database passwords on AWS?", "b": "How should I rotate IAM access keys?", "same": false}
+{"id": "n11", "a": "How do autoscaling target tracking policies work?", "b": "How do autoscaling step scaling policies work?", "same": false}
+{"id": "n12", "a": "What does multi_az do in aws_db_instance?", "b": "What does storage_encrypted do in aws_db_instance?", "same": false}
+{"id": "n13", "a": "How can I reduce data transfer costs between AZs?", "b": "How can I reduce S3 storage costs?", "same": false}
+{"id": "n14", "a": "What is chaos engineering?", "b": "What is platform engineering?", "same": false}
+{"id": "n15", "a": "What is a DB subnet group for?", "b": "What is a DB parameter group for?", "same": false}

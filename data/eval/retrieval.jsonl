@@ -1,0 +1,56 @@
+{"id": "t01", "query": "how to enable multi-AZ on an RDS postgres instance in terraform", "relevant": ["tf:aws_db_instance"]}
+{"id": "t02", "query": "terraform argument to let RDS manage the master password in Secrets Manager", "relevant": ["tf:aws_db_instance", "tf:aws_rds_cluster"]}
+{"id": "t03", "query": "block all public access to an S3 bucket", "relevant": ["tf:aws_s3_bucket_public_access_block"]}
+{"id": "t04", "query": "S3 default encryption with KMS key terraform", "relevant": ["tf:aws_s3_bucket_server_side_encryption_configuration"]}
+{"id": "t05", "query": "enable versioning on a bucket", "relevant": ["tf:aws_s3_bucket_versioning"]}
+{"id": "t06", "query": "expire old objects after 30 days lifecycle rule", "relevant": ["tf:aws_s3_bucket_lifecycle_configuration"]}
+{"id": "t07", "query": "application load balancer listener forwarding HTTP to a target group", "relevant": ["tf:aws_lb_listener"]}
+{"id": "t08", "query": "health check settings for a target group", "relevant": ["tf:aws_lb_target_group"]}
+{"id": "t09", "query": "autoscaling group with launch template min max desired capacity", "relevant": ["tf:aws_autoscaling_group"]}
+{"id": "t10", "query": "target tracking scaling policy on average CPU", "relevant": ["tf:aws_autoscaling_policy"]}
+{"id": "t11", "query": "Fargate task definition with container definitions cpu memory", "relevant": ["tf:aws_ecs_task_definition"]}
+{"id": "t12", "query": "ECS service network configuration assign_public_ip and load balancer block", "relevant": ["tf:aws_ecs_service"]}
+{"id": "t13", "query": "DynamoDB table on-demand billing with point in time recovery", "relevant": ["tf:aws_dynamodb_table"]}
+{"id": "t14", "query": "lambda function from a zip file with runtime python3.12 and IAM role", "relevant": ["tf:aws_lambda_function"]}
+{"id": "t15", "query": "HTTP API gateway route integration with lambda proxy", "relevant": ["tf:aws_apigatewayv2_integration", "tf:aws_apigatewayv2_route", "tf:aws_apigatewayv2_api"]}
+{"id": "t16", "query": "cloudfront distribution with S3 origin and origin access control", "relevant": ["tf:aws_cloudfront_distribution"]}
+{"id": "t17", "query": "NAT gateway in a public subnet with elastic IP", "relevant": ["tf:aws_nat_gateway", "tf:aws_eip"]}
+{"id": "t18", "query": "subnet in a specific availability zone map_public_ip_on_launch", "relevant": ["tf:aws_subnet"]}
+{"id": "t19", "query": "security group ingress rule allowing port 443 from anywhere ipv4", "relevant": ["tf:aws_vpc_security_group_ingress_rule", "tf:aws_security_group"]}
+{"id": "t20", "query": "IAM role assume role policy for EC2 instance profile", "relevant": ["tf:aws_iam_role", "tf:aws_iam_instance_profile"]}
+{"id": "t21", "query": "aurora postgresql cluster with two instances", "relevant": ["tf:aws_rds_cluster", "tf:aws_rds_cluster_instance"]}
+{"id": "t22", "query": "redis replication group with automatic failover", "relevant": ["tf:aws_elasticache_replication_group"]}
+{"id": "t23", "query": "cloudwatch alarm on CPU utilization sending to SNS", "relevant": ["tf:aws_cloudwatch_metric_alarm"]}
+{"id": "t24", "query": "KMS key with rotation enabled", "relevant": ["tf:aws_kms_key"]}
+{"id": "t25", "query": "db subnet group for RDS in private subnets", "relevant": ["tf:aws_db_subnet_group"]}
+{"id": "t26", "query": "EC2 instance with encrypted root block device", "relevant": ["tf:aws_instance"]}
+{"id": "w01", "query": "distribute workload across multiple availability zones to avoid single points of failure", "relevant": ["wa:rel_fault_isolation_multiaz_region_system"]}
+{"id": "w02", "query": "best practice: encrypt data at rest", "relevant": ["wa:sec_protect_data_rest_encrypt"]}
+{"id": "w03", "query": "how to store and rotate secrets and database credentials securely", "relevant": ["wa:sec_identities_secrets"]}
+{"id": "w04", "query": "automatic backups of data and backup encryption", "relevant": ["wa:rel_backing_up_data_automated_backups_data", "wa:rel_backing_up_data_secured_backups_data", "wa:rel_backing_up_data_identified_backups_data"]}
+{"id": "w05", "query": "create network layers, keep databases in private subnets", "relevant": ["wa:sec_network_protection_create_layers", "wa:sec_network_protection_layered"]}
+{"id": "w06", "query": "right-size compute resources based on metrics", "relevant": ["wa:perf_compute_hardware_configure_and_right_size_compute_resources", "wa:cost_type_size_number_resources_metrics", "wa:cost_type_size_number_resources_data"]}
+{"id": "w07", "query": "scale compute dynamically with demand using auto scaling", "relevant": ["wa:perf_compute_hardware_scale_compute_resources_dynamically", "wa:rel_adapt_to_changes_autoscale_adapt", "wa:cost_manage_demand_resources_dynamic"]}
+{"id": "w08", "query": "least privilege IAM permissions", "relevant": ["wa:sec_permissions_least_privileges"]}
+{"id": "w09", "query": "enforce encryption in transit with TLS", "relevant": ["wa:sec_protect_data_transit_encrypt"]}
+{"id": "w10", "query": "use load balancing to distribute traffic", "relevant": ["wa:perf_networking_load_balancing_distribute_traffic"]}
+{"id": "w11", "query": "set budgets and forecasts for cloud spend", "relevant": ["wa:cost_cloud_financial_management_budget_forecast"]}
+{"id": "w12", "query": "reduce data transfer costs between components", "relevant": ["wa:cost_data_transfer_implement_services", "wa:cost_data_transfer_optimized_components", "wa:cost_data_transfer_modeling"]}
+{"id": "w13", "query": "make services stateless so instances can be replaced", "relevant": ["wa:rel_mitigate_interaction_failure_stateless"]}
+{"id": "w14", "query": "choose a purpose-built database for the access pattern", "relevant": ["wa:perf_data_use_purpose_built_data_store"]}
+{"id": "w15", "query": "implement caching to improve data access performance", "relevant": ["wa:perf_data_access_patterns_caching"]}
+{"id": "w16", "query": "monitor all workload components and send notifications on failures", "relevant": ["wa:rel_withstand_component_failures_monitoring_health", "wa:rel_monitor_aws_resources_monitor_resources", "wa:rel_withstand_component_failures_notifications_sent_system", "wa:rel_monitor_aws_resources_notification_monitor"]}
+{"id": "w17", "query": "define RTO and RPO recovery objectives", "relevant": ["wa:rel_planning_for_recovery_objective_defined_recovery"]}
+{"id": "w18", "query": "throttle requests to protect the service from overload", "relevant": ["wa:rel_mitigate_interaction_failure_throttle_requests"]}
+{"id": "p01", "query": "keep my database running even if one data center goes down", "relevant": ["tf:aws_db_instance", "wa:rel_fault_isolation_multiaz_region_system", "tf:aws_rds_cluster"]}
+{"id": "p02", "query": "make sure nobody on the internet can read the files in my storage bucket", "relevant": ["tf:aws_s3_bucket_public_access_block", "wa:sec_permissions_analyze_cross_account"]}
+{"id": "p03", "query": "add more servers automatically when traffic grows", "relevant": ["tf:aws_autoscaling_group", "tf:aws_autoscaling_policy", "wa:perf_compute_hardware_scale_compute_resources_dynamically", "wa:rel_adapt_to_changes_autoscale_adapt", "wa:cost_manage_demand_resources_dynamic"]}
+{"id": "p04", "query": "where should I keep the password for my database so it is not in code", "relevant": ["wa:sec_identities_secrets", "tf:aws_secretsmanager_secret", "tf:aws_db_instance"]}
+{"id": "p05", "query": "run my docker containers without managing servers", "relevant": ["tf:aws_ecs_service", "tf:aws_ecs_task_definition", "tf:aws_ecs_cluster"]}
+{"id": "p06", "query": "let private machines reach the internet for updates without being reachable themselves", "relevant": ["tf:aws_nat_gateway"]}
+{"id": "p07", "query": "get an email when the server CPU is too high", "relevant": ["tf:aws_cloudwatch_metric_alarm", "tf:aws_sns_topic", "wa:rel_monitor_aws_resources_notification_monitor"]}
+{"id": "p08", "query": "serve my website quickly to users all over the world", "relevant": ["tf:aws_cloudfront_distribution", "wa:perf_networking_choose_workload_location_network_requirements"]}
+{"id": "p09", "query": "run code only when a request comes in and pay per invocation", "relevant": ["tf:aws_lambda_function"]}
+{"id": "p10", "query": "how much data can we afford to lose and how long can we be down", "relevant": ["wa:rel_planning_for_recovery_objective_defined_recovery"]}
+{"id": "p11", "query": "spending is growing too fast, how do we keep it under control", "relevant": ["wa:cost_cloud_financial_management_budget_forecast", "wa:cost_govern_usage_controls", "wa:cost_cloud_financial_management_proactive_process"]}
+{"id": "p12", "query": "only the web tier should talk to the database tier", "relevant": ["wa:sec_network_protection_layered", "wa:sec_network_protection_create_layers", "tf:aws_security_group"]}

@@ -1,0 +1,21 @@
+{"expect": "pass", "got": "pass", "ok": true, "decision_ok": true, "errors": [], "policy": [], "failed_requirements": [], "id": "v01", "latency_s": 2.59}
+{"expect": "validate", "got": "validate", "ok": true, "decision_ok": true, "errors": ["Unsupported argument: An argument named \"storage_size_gb\" is not expected here. (line 24)"], "policy": [], "failed_requirements": [], "id": "v02", "latency_s": 2.07}
+{"expect": "validate", "got": "validate", "ok": true, "decision_ok": true, "errors": ["Reference to undeclared resource: A managed resource \"aws_db_subnet_group\" \"missing\" has not been declared in the root module. (line 30)"], "policy": [], "failed_requirements": [], "id": "v03", "latency_s": 2.06}
+{"expect": "syntax", "got": "syntax", "ok": true, "decision_ok": true, "errors": ["HCL syntax error: Error: Argument or block definition required\n\n  on <stdin> line 5, in resource \"aws_vpc\" \"main\":\n   5: resource \"aws_vpc\" \"main\" {{\n\nAn argument or block definition is required here."], "policy": [], "failed_requirements": [], "id": "v04", "latency_s": 0.04}
+{"expect": "validate", "got": "validate", "ok": true, "decision_ok": true, "errors": ["Incorrect attribute value type: Inappropriate value for attribute \"allocated_storage\": a number is required. (line 23)"], "policy": [], "failed_requirements": [], "id": "v05", "latency_s": 1.95}
+{"expect": "policy", "got": "policy", "ok": true, "decision_ok": true, "errors": [], "policy": ["DB_ENCRYPTION"], "failed_requirements": [], "id": "v06", "latency_s": 1.99}
+{"expect": "policy", "got": "policy", "ok": true, "decision_ok": true, "errors": [], "policy": ["DB_PUBLIC"], "failed_requirements": [], "id": "v07", "latency_s": 2.04}
+{"expect": "policy", "got": "policy", "ok": true, "decision_ok": true, "errors": [], "policy": ["SG_ADMIN_OPEN"], "failed_requirements": [], "id": "v08", "latency_s": 1.97}
+{"expect": "requirement", "got": "requirement", "ok": true, "decision_ok": true, "errors": [], "policy": [], "failed_requirements": ["multi_az.database"], "id": "v09", "latency_s": 2.0}
+{"expect": "requirement", "got": "requirement", "ok": true, "decision_ok": true, "errors": [], "policy": [], "failed_requirements": ["database=postgres"], "id": "v10", "latency_s": 2.01}
+{"expect": "requirement", "got": "requirement", "ok": true, "decision_ok": true, "errors": [], "policy": [], "failed_requirements": ["network=public_frontend_private_backend"], "id": "v11", "latency_s": 1.98}
+{"expect": "requirement", "got": "requirement", "ok": true, "decision_ok": true, "errors": [], "policy": [], "failed_requirements": ["network=private"], "id": "v12", "latency_s": 2.03}
+{"expect": "requirement", "got": "requirement", "ok": true, "decision_ok": true, "errors": [], "policy": [], "failed_requirements": ["database=none"], "id": "v13", "latency_s": 1.98}
+{"expect": "pass", "got": "pass", "ok": true, "decision_ok": true, "errors": [], "policy": [], "failed_requirements": [], "id": "v14", "latency_s": 2.0}
+{"expect": "policy", "got": "policy", "ok": true, "decision_ok": true, "errors": [], "policy": ["S3_PUBLIC_ACCESS"], "failed_requirements": [], "id": "v15", "latency_s": 1.97}
+{"expect": "pass", "got": "pass", "ok": true, "decision_ok": true, "errors": [], "policy": [], "failed_requirements": [], "id": "v16", "latency_s": 2.01}
+{"expect": "requirement", "got": "requirement", "ok": true, "decision_ok": true, "errors": [], "policy": [], "failed_requirements": ["database=dynamodb"], "id": "v17", "latency_s": 1.98}
+{"expect": "pass", "got": "pass", "ok": true, "decision_ok": true, "errors": [], "policy": [], "failed_requirements": [], "id": "v18", "latency_s": 1.98}
+{"expect": "pass", "got": "pass", "ok": true, "decision_ok": true, "errors": [], "policy": [], "failed_requirements": [], "id": "v19", "latency_s": 2.0}
+{"expect": "requirement", "got": "requirement", "ok": true, "decision_ok": true, "errors": [], "policy": [], "failed_requirements": ["network=public"], "id": "v21", "latency_s": 1.97}
+{"expect": "validate", "got": "validate", "ok": true, "decision_ok": true, "errors": ["Unsupported argument: An argument named \"memory\" is not expected here. (line 14)"], "policy": [], "failed_requirements": [], "id": "v20", "latency_s": 1.99}

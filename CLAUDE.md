@@ -1,4 +1,4 @@
-# CLAUDE.md — instructions for the AI coding agent
+# CLAUDE.md - instructions for the AI coding agent
 
 This file is loaded into the coding agent's context on every session. It is the
 single source of truth for *how* the agent works on this repo. `AGENTS.md` points here
@@ -6,7 +6,7 @@ so other agents (Codex, Cursor, Gemini CLI) get the same rules.
 
 ## Project in one paragraph
 
-**InfraPilot** — an NLP system that turns a natural-language description of a small
+**InfraPilot** - an NLP system that turns a natural-language description of a small
 AWS workload into a **validated Terraform configuration** plus an explanation.
 LangGraph pipeline: Intent Router → Requirements Collector (multi-turn slot filling)
 → Hybrid Retriever (BM25 + Gemini embeddings over AWS Well-Architected + Terraform
@@ -21,16 +21,16 @@ Every piece of work is tagged with the CRISP-DM phase it belongs to and logged i
 `docs/crisp_dm_log.md` (use the `crisp-dm-log` skill). Work in this order and never
 skip a phase:
 
-1. **Business Understanding** — requirement in scope? success metric defined? If a
+1. **Business Understanding** - requirement in scope? success metric defined? If a
    feature has no measurable success criterion, define one *before* writing code.
-2. **Data Understanding** — inspect real data before generating synthetic data.
+2. **Data Understanding** - inspect real data before generating synthetic data.
    Prefer public sources (AWS docs, Terraform provider docs). Record counts/sizes.
-3. **Data Preparation** — scripts in `scripts/`, deterministic, idempotent, resumable.
+3. **Data Preparation** - scripts in `scripts/`, deterministic, idempotent, resumable.
    Never hand-edit files in `data/corpus/` or `data/index/`.
-4. **Modeling** — graph nodes in `src/infra_assistant/`. One node = one responsibility.
-5. **Evaluation** — every component has an eval in `evals/` with a metric that can
+4. **Modeling** - graph nodes in `src/infra_assistant/`. One node = one responsibility.
+5. **Evaluation** - every component has an eval in `evals/` with a metric that can
    distinguish good from bad output. No component ships without one.
-6. **Deployment** — Gradio UI (`infra_assistant.ui`) + CLI; README run instructions.
+6. **Deployment** - Gradio UI (`infra_assistant.ui`) + CLI; README run instructions.
 
 ## Hard rules
 
@@ -43,7 +43,7 @@ skip a phase:
   user-facing prose (advisor answer, explanation) and HCL.
 - **Determinism where possible:** if a check can be done with code (HCL parsing,
   terraform CLI, regex), do it with code, not an LLM.
-- **Generated Terraform** never contains `terraform {}` or `provider {}` blocks — those
+- **Generated Terraform** never contains `terraform {}` or `provider {}` blocks - those
   live in `terraform_sandbox/versions.tf` so validation is reproducible offline.
 - **Tests:** `pytest` must pass offline (no network, no keys). LLM calls are faked
   in tests via the `FakeModels` fixtures in `tests/conftest.py`.

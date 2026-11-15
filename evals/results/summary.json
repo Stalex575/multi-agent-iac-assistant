@@ -1,0 +1,120 @@
+{
+ "retrieval_bm25": {
+  "n": 56,
+  "bm25": {
+   "hit@1": 0.661,
+   "hit@5": 0.875,
+   "mrr": 0.753,
+   "ndcg@5": 0.738,
+   "recall@10": 0.817,
+   "recall@5": 0.811,
+   "hit@5_terraform_docs": 1.0,
+   "hit@5_well_architected": 1.0,
+   "hit@5_paraphrased": 0.417
+  },
+  "misses_bm25": [
+   {
+    "id": "p01",
+    "query": "keep my database running even if one data center goes down",
+    "relevant": [
+     "tf:aws_db_instance",
+     "wa:rel_fault_isolation_multiaz_region_system",
+     "tf:aws_rds_cluster"
+    ],
+    "top3": [
+     "tf:aws_ecs_service",
+     "wa:perf_data_use_purpose_built_data_store",
+     "tf:aws_security_group"
+    ]
+   },
+   {
+    "id": "p04",
+    "query": "where should I keep the password for my database so it is not in code",
+    "relevant": [
+     "wa:sec_identities_secrets",
+     "tf:aws_secretsmanager_secret",
+     "tf:aws_db_instance"
+    ],
+    "top3": [
+     "wa:rel_monitor_aws_resources_storage_analytics",
+     "wa:rel_planning_for_recovery_disaster_recovery",
+     "wa:cost_decomissioning_resources_implement_process"
+    ]
+   },
+   {
+    "id": "p06",
+    "query": "let private machines reach the internet for updates without being reachable themselves",
+    "relevant": [
+     "tf:aws_nat_gateway"
+    ],
+    "top3": [
+     "wa:sec_securely_operate_reduce_management_scope",
+     "wa:cost_data_transfer_optimized_components",
+     "tf:aws_lb"
+    ]
+   },
+   {
+    "id": "p07",
+    "query": "get an email when the server CPU is too high",
+    "relevant": [
+     "tf:aws_cloudwatch_metric_alarm",
+     "tf:aws_sns_topic",
+     "wa:rel_monitor_aws_resources_notification_monitor"
+    ],
+    "top3": [
+     "wa:rel_mitigate_interaction_failure_client_timeouts",
+     "tf:aws_ecs_service",
+     "tf:aws_lb_listener"
+    ]
+   },
+   {
+    "id": "p08",
+    "query": "serve my website quickly to users all over the world",
+    "relevant": [
+     "tf:aws_cloudfront_distribution",
+     "wa:perf_networking_choose_workload_location_network_requirements"
+    ],
+    "top3": [
+     "wa:cost_evaluate_new_services_review_workload",
+     "wa:rel_planning_network_topology_ha_conn_users",
+     "tf:aws_s3_bucket"
+    ]
+   },
+   {
+    "id": "p09",
+    "query": "run code only when a request comes in and pay per invocation",
+    "relevant": [
+     "tf:aws_lambda_function"
+    ],
+    "top3": [
+     "wa:sec_incident_response_prepare_forensic",
+     "wa:rel_planning_for_recovery_disaster_recovery",
+     "wa:rel_prevent_interaction_failure_identify"
+    ]
+   },
+   {
+    "id": "p10",
+    "query": "how much data can we afford to lose and how long can we be down",
+    "relevant": [
+     "wa:rel_planning_for_recovery_objective_defined_recovery"
+    ],
+    "top3": [
+     "wa:sec_securely_operate_threat_model",
+     "wa:rel_withstand_component_failures_failover2good",
+     "wa:cost_data_transfer_modeling"
+    ]
+   }
+  ]
+ },
+ "validator": {
+  "n": 21,
+  "decision_accuracy": 1.0,
+  "fail_detection": {
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "stage_accuracy": 1.0,
+  "mistakes": []
+ }
+}
