@@ -27,6 +27,7 @@ class Settings:
     google_api_key: str
     heavy_model: str
     fast_model: str
+    judge_model: str
     embedding_model: str
     embedding_dimension: int
     semantic_cache_threshold: float
@@ -36,25 +37,26 @@ class Settings:
     llm_timeout_seconds: int
     llm_max_retries: int
     llm_rpm: int
+    judge_rpm: int
     index_dir: Path
     sandbox_dir: Path
 
     @classmethod
     def load(cls, env_path: str | Path = DEFAULT_ENV_PATH) -> "Settings":
-        """`.env` values take precedence; OS environment is the fallback."""
+        """`.env` is the base; an exported variable overrides it (handy for one-off eval runs)."""
 
-        raw: dict[str, str | None] = dict(os.environ)
         path = Path(env_path)
-        if path.exists():
-            raw.update(dotenv_values(path))
+        raw: dict[str, str | None] = dict(dotenv_values(path)) if path.exists() else {}
+        raw.update(os.environ)
         return cls.from_mapping(raw)
 
     @classmethod
     def from_mapping(cls, raw: Mapping[str, str | None]) -> "Settings":
         settings = cls(
             google_api_key=_required(raw, "GOOGLE_API_KEY"),
-            heavy_model=_get(raw, "GEMINI_HEAVY_MODEL", "gemini-3.5-flash"),
+            heavy_model=_get(raw, "GEMINI_HEAVY_MODEL", "gemini-3.5-flash-lite"),
             fast_model=_get(raw, "GEMINI_FAST_MODEL", "gemini-3.1-flash-lite"),
+            judge_model=_get(raw, "GEMINI_JUDGE_MODEL", "gemini-3.8-flash"),
             embedding_model=_get(raw, "GEMINI_EMBEDDING_MODEL", "gemini-embedding-2"),
             embedding_dimension=int(_get(raw, "GEMINI_EMBEDDING_DIMENSION", "768")),
             semantic_cache_threshold=float(_get(raw, "SEMANTIC_CACHE_THRESHOLD", "0.92")),
@@ -64,6 +66,7 @@ class Settings:
             llm_timeout_seconds=int(_get(raw, "LLM_TIMEOUT_SECONDS", "90")),
             llm_max_retries=int(_get(raw, "LLM_MAX_RETRIES", "3")),
             llm_rpm=int(_get(raw, "LLM_RPM", "14")),
+            judge_rpm=int(_get(raw, "JUDGE_RPM", "4")),
             index_dir=Path(_get(raw, "INDEX_DIR", str(PROJECT_ROOT / "data" / "index"))),
             sandbox_dir=Path(_get(raw, "SANDBOX_DIR", str(PROJECT_ROOT / "terraform_sandbox"))),
         )
@@ -76,8 +79,8 @@ class Settings:
             raise SettingsError("SEMANTIC_CACHE_THRESHOLD must be between 0 and 1")
         if self.max_fix_retries < 0 or self.max_followup_turns < 0:
             raise SettingsError("retry/turn budgets must be >= 0")
-        if self.retrieval_top_k < 1 or self.llm_rpm < 1:
-            raise SettingsError("RETRIEVAL_TOP_K and LLM_RPM must be >= 1")
+        if self.retrieval_top_k < 1 or self.llm_rpm < 1 or self.judge_rpm < 1:
+            raise SettingsError("RETRIEVAL_TOP_K, LLM_RPM and JUDGE_RPM must be >= 1")
 
 
 def _required(raw: Mapping[str, str | None], key: str) -> str:

@@ -105,6 +105,12 @@ class Retriever:
         self.index = index
         self.embedder = embedder
         self.top_k = top_k
+        self._query_vectors: dict[str, list[float]] = {}  # dense + hybrid reuse one embedding call
+
+    async def _embed_query(self, query: str) -> list[float]:
+        if query not in self._query_vectors:
+            self._query_vectors[query] = await asyncio.to_thread(self.embedder.embed_query, query_text(query))
+        return self._query_vectors[query]
 
     async def search(self, query: str, mode: str = "hybrid", k: int | None = None) -> list[dict[str, Any]]:
         k = k or self.top_k
@@ -112,8 +118,7 @@ class Retriever:
         lexical = self.index.bm25_ranking(query, pool)
         if mode == "bm25" or self.embedder is None or self.index.vectors is None:
             return [self.index.hit(i, s) for i, s in lexical[:k]]
-        vec = await asyncio.to_thread(self.embedder.embed_query, query_text(query))
-        dense = self.index.dense_ranking(vec, pool)
+        dense = self.index.dense_ranking(await self._embed_query(query), pool)
         ranked = dense[:k] if mode == "dense" else self.index.rrf([lexical, dense], k)
         return [self.index.hit(i, s) for i, s in ranked]
 

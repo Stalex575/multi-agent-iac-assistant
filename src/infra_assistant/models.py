@@ -18,7 +18,7 @@ class ModelBundle:
     collector: Any  # fast, temperature 0 - slot extraction
     generator: Any  # heavy - Terraform generation
     writer: Any  # heavy - advisor answers + explanations
-    judge: Any  # fast, temperature 0 - LLM-as-judge (evals only)
+    judge: Any  # separate, stronger model - LLM-as-judge (evals only)
     embeddings: Any
 
 
@@ -34,23 +34,25 @@ def build_embedder(settings: Settings) -> Any:
 def build_models(settings: Settings) -> ModelBundle:
     from langchain_google_genai import ChatGoogleGenerativeAI
 
-    # One shared client-side limiter keeps every role under the free-tier RPM quota.
-    limiter = InMemoryRateLimiter(requests_per_second=settings.llm_rpm / 60, check_every_n_seconds=0.2, max_bucket_size=2)
+    # Free-tier quotas are per model, so each model name gets its own client-side limiter.
+    limiters: dict[str, InMemoryRateLimiter] = {}
 
-    def chat(model: str, temperature: float) -> ChatGoogleGenerativeAI:
+    def chat(model: str, temperature: float, rpm: int) -> ChatGoogleGenerativeAI:
+        if model not in limiters:
+            limiters[model] = InMemoryRateLimiter(requests_per_second=rpm / 60, check_every_n_seconds=0.2, max_bucket_size=1)
         return ChatGoogleGenerativeAI(
             model=model,
             temperature=temperature,
             timeout=settings.llm_timeout_seconds,
             max_retries=settings.llm_max_retries,
-            rate_limiter=limiter,
+            rate_limiter=limiters[model],
         )
 
     return ModelBundle(
-        router=chat(settings.fast_model, 0.0),
-        collector=chat(settings.fast_model, 0.0),
-        generator=chat(settings.heavy_model, 0.2),
-        writer=chat(settings.heavy_model, 0.3),
-        judge=chat(settings.fast_model, 0.0),
+        router=chat(settings.fast_model, 0.0, settings.llm_rpm),
+        collector=chat(settings.fast_model, 0.0, settings.llm_rpm),
+        generator=chat(settings.heavy_model, 0.2, settings.llm_rpm),
+        writer=chat(settings.heavy_model, 0.3, settings.llm_rpm),
+        judge=chat(settings.judge_model, 0.0, settings.judge_rpm),
         embeddings=build_embedder(settings),
     )
