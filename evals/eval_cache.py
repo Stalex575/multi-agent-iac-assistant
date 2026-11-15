@@ -33,7 +33,7 @@ async def run(ctx: Any) -> list[dict[str, Any]]:
         return {"a": item["a"], "b": item["b"], "same": item["same"], "cosine": round(cos, 4),
                 "ok": hit == item["same"]}
 
-    return await run_resumable(NAME, load_dataset(NAME), one)
+    return await run_resumable(NAME, load_dataset("cache_pairs"), one)
 
 
 def summarize(rows: list[dict[str, Any]], configured: float = 0.92) -> dict[str, Any]:
