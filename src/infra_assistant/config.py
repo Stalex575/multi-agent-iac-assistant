@@ -63,7 +63,7 @@ class Settings:
             judge_model=_get(raw, "GEMINI_JUDGE_MODEL", "gemini-3.8-flash"),
             embedding_model=_get(raw, "GEMINI_EMBEDDING_MODEL", "gemini-embedding-2"),
             embedding_dimension=int(_get(raw, "GEMINI_EMBEDDING_DIMENSION", "768")),
-            semantic_cache_threshold=float(_get(raw, "SEMANTIC_CACHE_THRESHOLD", "0.92")),
+            semantic_cache_threshold=float(_get(raw, "SEMANTIC_CACHE_THRESHOLD", "0.94")),
             max_fix_retries=int(_get(raw, "MAX_FIX_RETRIES", "2")),
             max_followup_turns=int(_get(raw, "MAX_FOLLOWUP_TURNS", "3")),
             retrieval_top_k=int(_get(raw, "RETRIEVAL_TOP_K", "6")),

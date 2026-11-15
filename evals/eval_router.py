@@ -47,6 +47,13 @@ def _metrics(rows: list[dict[str, Any]], key: str) -> dict[str, Any]:
     }
 
 
+def _subset_accuracy(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    if not rows:
+        return {}
+    return {"n": len(rows), "llm": round(sum(r["ok"] for r in rows) / len(rows), 3),
+            "baseline": round(sum(r["baseline"] == r["label"] for r in rows) / len(rows), 3)}
+
+
 def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
     if not rows:
         return {}
@@ -54,6 +61,10 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "n": len(rows),
         "llm": _metrics(rows, "pred"),
         "keyword_baseline": _metrics(rows, "baseline"),
+        "accuracy_easy_vs_hard": {
+            "easy": _subset_accuracy([r for r in rows if not r["id"].startswith("h")]),
+            "hard": _subset_accuracy([r for r in rows if r["id"].startswith("h")]),
+        },
         "errors": [{"id": r["id"], "text": r["text"], "gold": r["label"], "pred": r["pred"], "reason": r["reason"]}
                    for r in rows if not r["ok"]],
         "avg_latency_s": round(sum(r["latency_s"] for r in rows) / len(rows), 2),

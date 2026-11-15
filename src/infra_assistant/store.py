@@ -87,14 +87,33 @@ class KnowledgeIndex:
         return [(to_chunk[int(i)], float(scores[i])) for i in order]
 
     @staticmethod
-    def rrf(rankings: list[list[tuple[int, float]]], k: int) -> list[tuple[int, float]]:
+    def rrf(rankings: list[list[tuple[Any, float]]], k: int) -> list[tuple[Any, float]]:
         """Reciprocal Rank Fusion: robust to BM25/cosine score scales differing."""
 
-        fused: dict[int, float] = {}
+        fused: dict[Any, float] = {}
         for ranking in rankings:
             for rank, (idx, _) in enumerate(ranking):
                 fused[idx] = fused.get(idx, 0.0) + 1.0 / (RRF_K + rank + 1)
         return sorted(fused.items(), key=lambda kv: -kv[1])[:k]
+
+    def fuse_by_document(self, lexical: list[tuple[int, float]], dense: list[tuple[int, float]], k: int) -> list[tuple[int, float]]:
+        """RRF over *documents*, then the best BM25 paragraph of each winning document.
+
+        Fusing chunks directly was a bug: BM25 votes once per chunk, dense once per document,
+        so BM25 noise outvoted correct dense hits (hybrid Hit@5 0.857 < dense 1.0).
+        """
+
+        best_chunk: dict[str, int] = {}
+        doc_rankings: list[list[tuple[str, float]]] = []
+        for ranking in (lexical, dense):
+            docs: list[tuple[str, float]] = []
+            for idx, _ in ranking:
+                doc = self.chunks[idx]["doc_id"]
+                best_chunk.setdefault(doc, idx)
+                if doc not in {d for d, _ in docs}:
+                    docs.append((doc, 0.0))
+            doc_rankings.append(docs)
+        return [(best_chunk[doc], score) for doc, score in self.rrf(doc_rankings, k)]
 
     def hit(self, idx: int, score: float) -> dict[str, Any]:
         c = self.chunks[idx]
@@ -123,7 +142,7 @@ class Retriever:
         if mode == "bm25" or self.embedder is None or self.index.vectors is None:
             return [self.index.hit(i, s) for i, s in lexical[:k]]
         dense = self.index.dense_ranking(await self._embed_query(query), pool)
-        ranked = dense[:k] if mode == "dense" else self.index.rrf([lexical, dense], k)
+        ranked = dense[:k] if mode == "dense" else self.index.fuse_by_document(lexical, dense, k)
         return [self.index.hit(i, s) for i, s in ranked]
 
 

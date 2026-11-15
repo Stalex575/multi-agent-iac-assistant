@@ -86,3 +86,20 @@ author and the coding agent via the `crisp-dm-log` skill).
   paragraph. Embedding is paced at 15 texts / 15 s. Total embedding use today ~680 of 1000 incl. evals and demo.
 - **Trade-off:** dense retrieval loses detail from the later sections of long docs. The retrieval eval measures
   at document level, so it is still a fair comparison, but chunk-level dense would likely score a bit higher.
+
+### 22:22 - Evaluation -> Modeling (loop back) - router too easy, hybrid worse than dense, cache threshold
+- **Router:** 60/60 correct vs 88.3% for a keyword baseline. A perfect score on a hand-written set says more about
+  the set than the router, so 15 deliberately ambiguous messages were added (questions phrased like requests,
+  Terraform debugging, coding tasks next to infra, follow-ups without context). Reported separately as "hard".
+- **Collector:** slot accuracy 1.0 lenient / 0.945 strict. All strict misses are `public` vs
+  `public_frontend_private_backend` (5/14) - the two enum values overlap. Could be merged, the policy rules already
+  force the DB to be private.
+- **Retrieval:** dense Hit@5 1.0 (paraphrased 1.0) vs BM25 0.875 (paraphrased 0.42), but hybrid only 0.857.
+  Cause: RRF was done over chunks; BM25 votes once per chunk, dense once per document (doc-level vectors), so BM25
+  noise outvoted good dense hits. Fix: RRF over documents, then the best BM25 paragraph of each winning doc.
+  Simulated on the stored rankings before spending quota: Hit@5 0.857 -> 0.982 with equal weights (dense x2 would
+  give 1.0, but that is tuning on the test set, so equal weights were kept). Old run kept as
+  `retrieval_v1_chunk_fusion.jsonl` for the report.
+- **Cache:** paraphrases average cosine 0.961, near-miss questions 0.874 but up to 0.923. At the old threshold 0.92
+  the false-hit rate is 13% (e.g. "PITR for DynamoDB" vs "PITR for RDS"). From 0.93 up there are no false hits on
+  this set; 0.94 chosen to keep some margin (recall drops to 0.867, which only costs an extra LLM call).

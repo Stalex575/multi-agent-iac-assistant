@@ -37,7 +37,7 @@ async def run(ctx: Any) -> list[dict[str, Any]]:
     return await run_resumable(NAME, load_dataset("cache_pairs"), one)
 
 
-def summarize(rows: list[dict[str, Any]], configured: float = 0.92) -> dict[str, Any]:
+def summarize(rows: list[dict[str, Any]], configured: float = 0.94) -> dict[str, Any]:
     if not rows:
         return {}
     sweep = []
