@@ -1,6 +1,6 @@
 # Evaluation report
 
-Generated 2026-11-15 20:40 from `evals/results/*.jsonl` by `python -m evals.make_report`.
+Generated 2026-11-15 from `evals/results/*.jsonl` by `python -m evals.make_report`.
 
 ## 1. Intent Router
 

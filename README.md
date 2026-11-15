@@ -388,7 +388,7 @@ chat prompts:
 
 ## 8. Limitations and next steps
 
-- Eval sets are small (written by hand in one day); numbers have wide error bars.
+- Eval sets are small (written by hand); numbers have wide error bars.
 - Requirement checks cover the main slots, not everything (e.g. budget is only used in the prompt, there is no
   real cost check; Infracost would be the next step).
 - The validator only checks what `terraform validate` can check without AWS credentials (no `plan`), and the

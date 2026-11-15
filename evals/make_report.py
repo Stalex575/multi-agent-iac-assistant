@@ -95,7 +95,7 @@ SECTIONS = [
 
 def main() -> None:
     summary: dict[str, Any] = {}
-    parts = [f"# Evaluation report\n\nGenerated {datetime.now():%Y-%m-%d %H:%M} from `evals/results/*.jsonl` "
+    parts = [f"# Evaluation report\n\nGenerated {datetime.now():%Y-%m-%d} from `evals/results/*.jsonl` "
              "by `python -m evals.make_report`.\n"]
     for title, name, module, render in SECTIONS:
         rows = load_results(name)

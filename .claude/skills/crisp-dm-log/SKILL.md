@@ -8,7 +8,7 @@ description: Append a CRISP-DM phase entry to docs/crisp_dm_log.md. Use after fi
 Append (never rewrite history) to `docs/crisp_dm_log.md`:
 
 ```markdown
-### <HH:MM> - <Phase> - <short title>
+### Step <N> - <Phase> - <short title>
 - **What:** one or two lines.
 - **Why / decision:** the reason, alternatives rejected.
 - **Evidence:** file paths, counts, metric values.

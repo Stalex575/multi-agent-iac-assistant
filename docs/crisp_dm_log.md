@@ -3,11 +3,11 @@
 Chronological log of how the project moved through CRISP-DM phases (written by the
 author and the coding agent via the `crisp-dm-log` skill).
 
-### 16:05 - Business Understanding - choose the task
+### Step 1 - Business Understanding - choose the task
 - **What:** Picked the "DevOps assistant that generates Terraform" brief and decided to
   upgrade the author's earlier `multi-agent-triage` (LangGraph router → specialist →
   QA-retry loop + semantic cache) instead of starting from scratch.
-- **Why / decision:** ~8h deadline. The old repo already had routing, retrieval, a
+- **Why / decision:** reusing working parts made more sense than starting over. The old repo already had routing, retrieval, a
   self-correcting retry loop and caching, but had no evaluation, no requirement
   collection, toy seed data (6 hand-written docs) and only an LLM-as-QA check.
   Rejected: a brand-new HR/recruiter assistant (no reusable parts).
@@ -20,7 +20,7 @@ author and the coding agent via the `crisp-dm-log` skill).
   - Out-of-scope requests are refused (router OUT_OF_SCOPE recall ≥ 0.9).
 - **Next:** inspect available data.
 
-### 16:20 - Data Understanding - knowledge sources
+### Step 2 - Data Understanding - knowledge sources
 - **What:** Probed public sources. AWS Well-Architected Framework TOC has 366 leaf pages
   (Reliability 72, Security 73, Cost 58, Performance 40 …). Terraform AWS provider docs
   are markdown on GitHub (e.g. `db_instance` = 43 KB with example usage + argument reference).
@@ -30,12 +30,12 @@ author and the coding agent via the `crisp-dm-log` skill).
   sets are synthetic but hand-checked (see `data/eval/`).
 - **Evidence:** `scripts/fetch_docs.py`, `data/raw/`.
 
-### 16:25 - Deployment (tooling) - reproducible validator
+### Step 3 - Deployment (tooling) - reproducible validator
 - **What:** Installed Terraform 1.9.8, pre-initialised `terraform_sandbox/` with
   `hashicorp/aws ~> 5.0`; generated code never declares providers, so validation runs offline.
 - **Why / decision:** Deterministic validity metric instead of LLM-judged validity.
 
-### 16:35 - Data Preparation - chunking
+### Step 4 - Data Preparation - chunking
 - **What:** `scripts/build_index.py` turns 263 raw docs into 2315 chunks (1168 Terraform, 1147 Well-Architected).
   Terraform docs are split by `##`/`###` headings; "Attribute Reference", "Import" and "Timeouts" sections are dropped
   because they describe outputs, not how to write config. WA pages are re-flowed (the HTML export put a newline
@@ -44,7 +44,7 @@ author and the coding agent via the `crisp-dm-log` skill).
   Heading-based splitting keeps an "Example Usage" block together.
 - **Evidence:** median chunk 1105 chars, max 1200.
 
-### 16:50 - Modeling - graph rebuilt on top of the old triage router
+### Step 5 - Modeling - graph rebuilt on top of the old triage router
 - **What:** kept the old ideas (router, specialist, QA retry loop, semantic cache) and changed what they do:
   - router now picks TERRAFORM_REQUEST / INFRA_QUESTION / OUT_OF_SCOPE instead of DB vs DevOps;
   - new Requirements Collector (structured slot filling, asks follow-ups, max 3 rounds, then fills defaults and
@@ -56,7 +56,7 @@ author and the coding agent via the `crisp-dm-log` skill).
 - **Why / decision:** an LLM judging its own Terraform is not reliable; `terraform validate` is.
 - **Evidence:** `src/infra_assistant/graph.py`, 13 offline tests pass (`pytest -q`).
 
-### 17:20 - Evaluation - first offline results
+### Step 6 - Evaluation - first offline results
 - **What:** validator eval (21 labelled configs) and BM25 retrieval eval (56 queries) run without an API key.
 - **Findings:**
   - The first validator run "failed" 2 cases. Both were labelling mistakes on my side: an S3 bucket with public
@@ -67,7 +67,7 @@ author and the coding agent via the `crisp-dm-log` skill).
     queries with the doc titles in mind. Added the paraphrased group to make the comparison with dense retrieval fair.
 - **Next:** embed the corpus and check whether dense / hybrid fixes the paraphrased group.
 
-### 22:15 - Modeling / Evaluation - first real run, one-line HCL bug
+### Step 7 - Modeling / Evaluation - first real run, one-line HCL bug
 - **What:** first end-to-end run with real Gemini (Flask + Postgres, multi-AZ). The first generator draft came back
   as a single line: the model put escaped `\n` into the structured-output string, so `terraform validate` failed for
   a reason that has nothing to do with Terraform. The fix loop recovered on attempt 2, but it wastes a call.
@@ -77,17 +77,17 @@ author and the coding agent via the `crisp-dm-log` skill).
   (5 RPM, 20 RPD each, so only used for ~12 judge calls each). Stronger "flash" models were not used for generation
   because 20 requests/day is not enough for 12 generation cases with retries.
 
-### 22:12 - Data Preparation (loop back) - embedding quota
+### Step 8 - Data Preparation (loop back) - embedding quota
 - **What:** started embedding all 2315 chunks and hit the free-tier limit after ~200: the embedding API counts every
   text in a batch as one request (100/min, 1000/day). Embedding everything would need 2315 requests, more than a day
   of quota. Stopped the job.
 - **Decision:** dense vectors are now built per document (263 texts: title + start of the doc, ~1500 chars), BM25
   stays per chunk. Hybrid search fuses both, so the dense side picks the right document and BM25 picks the right
-  paragraph. Embedding is paced at 15 texts / 15 s. Total embedding use today ~680 of 1000 incl. evals and demo.
+  paragraph. Embedding is paced at 15 texts / 15 s. Total embedding use ~680 of the 1000 daily requests incl. evals and demo.
 - **Trade-off:** dense retrieval loses detail from the later sections of long docs. The retrieval eval measures
   at document level, so it is still a fair comparison, but chunk-level dense would likely score a bit higher.
 
-### 22:22 - Evaluation -> Modeling (loop back) - router too easy, hybrid worse than dense, cache threshold
+### Step 9 - Evaluation -> Modeling (loop back) - router too easy, hybrid worse than dense, cache threshold
 - **Router:** 60/60 correct vs 88.3% for a keyword baseline. A perfect score on a hand-written set says more about
   the set than the router, so 15 deliberately ambiguous messages were added (questions phrased like requests,
   Terraform debugging, coding tasks next to infra, follow-ups without context). Reported separately as "hard".
@@ -104,7 +104,7 @@ author and the coding agent via the `crisp-dm-log` skill).
   the false-hit rate is 13% (e.g. "PITR for DynamoDB" vs "PITR for RDS"). From 0.93 up there are no false hits on
   this set; 0.94 chosen to keep some margin (recall drops to 0.867, which only costs an extra LLM call).
 
-### 22:40 - Evaluation - generation, explainer, advisor; judge problems
+### Step 10 - Evaluation - generation, explainer, advisor; judge problems
 - **Generation:** all checks passed 0.25 on the first draft -> 0.83 after the fix loop (no-RAG ablation: 0.00 -> 0.58).
   No HIGH policy finding and 100% requirement coverage in every final config. Remaining failures: a Lambda case using
   the `archive` provider (not installed in the offline sandbox) and a non-existent `inline_code` block, and an ECS
@@ -115,5 +115,5 @@ author and the coding agent via the `crisp-dm-log` skill).
   the judge needs the same context as the explainer (it flagged the injected region as unsupported).
 - **Advisor:** faithfulness 2.5/5. Mostly correct facts that are not in the indexed docs (the knowledge base has
   the Terraform reference and Well-Architected, not the service user guides), plus 2 real grounding errors.
-- **Next (not done, out of time):** add service user guides to the corpus; re-retrieve docs for the resource named
+- **Next (future work):** add service user guides to the corpus; re-retrieve docs for the resource named
   in a repeated validate error; pre-install `hashicorp/archive` in the sandbox; clearer scope examples in the router.
