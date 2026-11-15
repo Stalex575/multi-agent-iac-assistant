@@ -68,6 +68,9 @@ class ValidationReport:
 def extract_hcl(text: str) -> str:
     """Pull HCL out of a markdown answer if the model wrapped it in fences."""
 
+    if "\n" not in text.strip() and "\\n" in text:
+        # Seen with Gemini structured output: the whole file comes back on one line with escaped newlines.
+        text = text.replace("\\n", "\n").replace('\\"', '"')
     blocks = re.findall(r"```(?:hcl|terraform|tf)?\s*\n(.*?)```", text, flags=re.S)
     return "\n\n".join(b.strip() for b in blocks) if blocks else text.strip()
 

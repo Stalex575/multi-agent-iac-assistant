@@ -59,3 +59,8 @@ def test_slot_helpers() -> None:
     assert req.database == "postgres" and "traffic" in missing_slots(req)
     filled, assumed = apply_defaults(req)
     assert not missing_slots(filled) and "traffic" in assumed and "database" not in assumed
+
+
+def test_escaped_single_line_hcl_is_restored() -> None:
+    one_line = 'resource \\"aws_vpc\\" \\"main\\" {\\n  cidr_block = \\"10.0.0.0/16\\"\\n}\\n'
+    assert extract_hcl(one_line) == 'resource "aws_vpc" "main" {\n  cidr_block = "10.0.0.0/16"\n}'

@@ -166,7 +166,10 @@ python -m infra_assistant.cli   # or a terminal chat
 pytest -q                       # offline tests, no key needed
 ```
 
-Optional LangSmith tracing: set `LANGCHAIN_TRACING_V2=true`, `LANGCHAIN_API_KEY`, `LANGCHAIN_PROJECT` in `.env`.
+Optional LangSmith tracing: set `LANGSMITH_TRACING=true`, `LANGSMITH_API_KEY` and `LANGSMITH_PROJECT` in `.env`.
+No code changes are needed, LangGraph sends every node and LLM call (prompt, output, tokens, latency) to
+LangSmith. Evals were traced into a separate project (`LANGSMITH_PROJECT=iac-evals python -m evals.run_all`)
+so the demo project only has demo conversations.
 
 ### Evaluation
 

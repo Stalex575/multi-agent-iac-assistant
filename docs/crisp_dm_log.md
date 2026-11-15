@@ -66,3 +66,13 @@ author and the coding agent via the `crisp-dm-log` skill).
     ("get an email when CPU is too high"). The first version of the retrieval set was too easy because I wrote the
     queries with the doc titles in mind. Added the paraphrased group to make the comparison with dense retrieval fair.
 - **Next:** embed the corpus and check whether dense / hybrid fixes the paraphrased group.
+
+### 22:15 - Modeling / Evaluation - first real run, one-line HCL bug
+- **What:** first end-to-end run with real Gemini (Flask + Postgres, multi-AZ). The first generator draft came back
+  as a single line: the model put escaped `\n` into the structured-output string, so `terraform validate` failed for
+  a reason that has nothing to do with Terraform. The fix loop recovered on attempt 2, but it wastes a call.
+- **Fix:** `extract_hcl` restores escaped newlines when the draft has no real line breaks (+ regression test).
+- **Models chosen (free tier limits):** generator/explainer/advisor `gemini-3.5-flash-lite` (15 RPM, 500 RPD),
+  router/collector `gemini-3.1-flash-lite` (separate quota), judges `gemini-3.8-flash` and `gemini-4-hydrogen`
+  (5 RPM, 20 RPD each, so only used for ~12 judge calls each). Stronger "flash" models were not used for generation
+  because 20 requests/day is not enough for 12 generation cases with retries.
