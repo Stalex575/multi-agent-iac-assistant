@@ -9,3 +9,6 @@ data/raw/
 terraform_sandbox/.terraform/
 terraform_sandbox/runs/
 .gradio/
+data/index/semantic_cache.jsonl
+data/index/vectors.partial.npy
+*.pdf
